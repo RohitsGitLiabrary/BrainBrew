@@ -16,18 +16,7 @@ const Leaderboard = () => {
         { id: 10, name: "Jack", score: 5, avatar: "https://i.pravatar.cc/50?img=10" },
     ];
 
-    const renderRank = (rank) => {
-        if (rank === 1) {
-            return <FaMedal className="text-yellow-500 text-2xl" />; // Gold medal
-        }
-        if (rank === 2) {
-            return <FaMedal className="text-gray-400 text-2xl" />; // Silver medal
-        }
-        if (rank === 3) {
-            return <FaMedal className="text-orange-500 text-2xl" />; // Bronze medal
-        }
-        return <span className="text-lg font-semibold text-gray-700">{rank}</span>; // Number for other ranks
-    };
+
 
     return (
         <div className="bg-white/90 rounded-lg shadow-lg h-full p-6 flex flex-col w-full lg:w-[80%]">
@@ -45,7 +34,7 @@ const Leaderboard = () => {
                             avatar={player.avatar}
                             name={player.name}
                             score={player.score}
-                            rank={renderRank(index + 1)} // Pass rank with medals or numbers
+                            rank={(index + 1)} // Pass rank with medals or numbers
                         />
                     ))}
                 </div>
