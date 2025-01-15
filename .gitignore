@@ -26,3 +26,6 @@ yarn-error.log*
 # Architecture
 DATABASE_ARCHITECTURE.md
 FOLDER_STRUCTURE.md
+
+# Firebase API Key
+.env*
