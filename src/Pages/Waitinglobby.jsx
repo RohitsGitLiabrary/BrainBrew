@@ -1,17 +1,22 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Playercard from "../components/Playercard"; // Import the PlayerCard component
 import backgroundImage from "../assets/Images/quizBG.avif";
-import avatars from "../assets/Avatars/avatars";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
+import { ref, onValue } from "firebase/database";
+import { db } from "../Firebase/Firebase";
+
 
 const Waitinglobby = () => {
+
+    const [playerList, setPlayerList] = useState([])
+
     const dispatch = useDispatch();
 
     // Access the room state, loading, and error
     const { loading, error } = useSelector((state) => state.room);
     const room = useSelector((state) => state.room);
+
     const roomCode = sessionStorage.getItem('roomCode'); // Get roomID from sessionStorage
 
     // Fetch room details on component mount
@@ -20,21 +25,16 @@ const Waitinglobby = () => {
             dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
         }
     }, [dispatch, roomCode]);
-
-    const navigate = useNavigate();
-
-    const players = [
-        { id: 1, name: "Player 1", avatar: avatars.avatar1 },
-        { id: 2, name: "Player 2", avatar: avatars.avatar2 },
-        { id: 3, name: "Player 3", avatar: avatars.avatar3 },
-        { id: 4, name: "Player 4", avatar: avatars.avatar4 },
-        { id: 5, name: "Player 5", avatar: avatars.avatar5 },
-        { id: 6, name: "Player 6", avatar: avatars.avatar6 },
-        { id: 7, name: "Player 7", avatar: avatars.avatar7 },
-        { id: 8, name: "Player 8", avatar: avatars.avatar8 },
-        { id: 9, name: "Player 9", avatar: avatars.avatar9 },
-        { id: 10, name: "Player 10", avatar: avatars.avatar10 },
-    ]; // List of players
+    useEffect(() => {
+        if (room.room !== null) { setPlayerList(Object.values(room.room.players)) }
+        const starCountRef = ref(db, 'rooms/' + roomCode + '/players');
+        onValue(starCountRef, (snapshot) => {
+            const data = snapshot.val();
+            // console.log(playerList)
+            setPlayerList(Object.values(data))
+            // setPlayerList(data);
+        });
+    }, [room.room]);
 
     // Handle loading state
     if (loading) {
@@ -99,16 +99,16 @@ const Waitinglobby = () => {
                 {/* Scrollable Player List */}
                 <div className="flex-1 overflow-y-auto p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {players.map((player) => (
+                        {playerList.map((player) => (
                             <Playercard
-                                key={player.id}
-                                name={player.name}
-                                avatar={player.avatar}
+                                key={player.playerID}
+                                name={player.playername}
+                            // avatar={player.avatar}
                             />
                         ))}
                     </div>
-                </div>
 
+                </div>
                 {/* Sticky Bottom Section */}
                 <div className="sticky bottom-0 z-20 bg-white/90 p-4 rounded-b-lg">
                     <button className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-lg font-bold text-lg">

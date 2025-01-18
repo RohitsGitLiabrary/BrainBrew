@@ -21,9 +21,9 @@ const Createroom = () => {
     }
 
     useEffect(() => {
-        if (room === null) return
-        sessionStorage.setItem('roomCode', room.roomID)
+        if (!room) return
         console.log(room)
+        sessionStorage.setItem('roomCode', room.roomID)
         navigate('/Waitinglobby')
     }, [room])
 
