@@ -1,6 +1,5 @@
 import React from "react";
 import Playerscorecard from "./Playerscorecard";
-import { FaMedal } from "react-icons/fa"; // Medal icons from react-icons
 
 const Leaderboard = () => {
     const players = [

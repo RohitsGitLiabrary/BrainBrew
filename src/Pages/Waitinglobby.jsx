@@ -1,10 +1,28 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Playercard from "../components/Playercard"; // Import the PlayerCard component
 import backgroundImage from "../assets/Images/quizBG.avif";
 import avatars from "../assets/Avatars/avatars";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router";
+import { fetchRoom } from "../thunks/fetchRoomThunk";
 
 const Waitinglobby = () => {
-    const roomId = "AB123"; // Room ID
+    const dispatch = useDispatch();
+
+    // Access the room state, loading, and error
+    const { loading, error } = useSelector((state) => state.room);
+    const room = useSelector((state) => state.room);
+    const roomCode = sessionStorage.getItem('roomCode'); // Get roomID from sessionStorage
+
+    // Fetch room details on component mount
+    useEffect(() => {
+        if (roomCode) {
+            dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
+        }
+    }, [dispatch, roomCode]);
+
+    const navigate = useNavigate();
+
     const players = [
         { id: 1, name: "Player 1", avatar: avatars.avatar1 },
         { id: 2, name: "Player 2", avatar: avatars.avatar2 },
@@ -17,6 +35,35 @@ const Waitinglobby = () => {
         { id: 9, name: "Player 9", avatar: avatars.avatar9 },
         { id: 10, name: "Player 10", avatar: avatars.avatar10 },
     ]; // List of players
+
+    // Handle loading state
+    if (loading) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <p className="text-lg font-bold text-gray-700">Loading...</p>
+            </div>
+        );
+    }
+
+    // Handle error state
+    if (error) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <p className="text-lg font-bold text-red-500">
+                    Error: {error || "Unable to load room details"}
+                </p>
+            </div>
+        );
+    }
+
+    // Handle case when room data is not available yet
+    if (!room || !room.room) {
+        return (
+            <div className="h-screen flex items-center justify-center">
+                <p className="text-lg font-bold text-gray-500">Room data is not available.</p>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -42,7 +89,10 @@ const Waitinglobby = () => {
 
                     {/* Room ID */}
                     <p className="text-lg sm:text-xl mb-4 text-[#333333] text-center">
-                        Room ID: <span className="text-green-600">{roomId}</span>
+                        Room Name: <span className="text-green-600">{room.room.roomName}</span>
+                    </p>
+                    <p className="text-lg sm:text-xl mb-4 text-[#333333] text-center">
+                        Room ID: <span className="text-green-600">{room.room.roomID}</span>
                     </p>
                 </div>
 
