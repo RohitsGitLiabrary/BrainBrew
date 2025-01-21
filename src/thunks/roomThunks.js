@@ -1,8 +1,8 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { set, ref, serverTimestamp, push } from 'firebase/database';
+import { set, ref, serverTimestamp, push, get, remove, update } from 'firebase/database';
 import { db } from '../Firebase/Firebase';
 import { fetchRoom } from "./fetchRoomThunk";
-
+import avatars from "../assets/Avatars/avatars";
 function generateRoomID(length = 6) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let roomID = '';
@@ -21,6 +21,39 @@ function generateID(length = 6) {
     return `${id}`;
 }
 
+const getAvatar = async (roomID) => {
+    try {
+        const roomRef = ref(db, `rooms/${roomID}/availableAvatars`);
+        const snapshot = await get(roomRef);
+
+        if (snapshot.exists()) {
+            const avatars = snapshot.val(); // e.g., { avatar1: "url1", avatar2: "url2", ... }
+            // Check if there are available avatars
+            if (Object.keys(avatars).length > 0) {
+                // Get the first available avatar (key-value pair)
+                const [key, url] = Object.entries(avatars)[0]; // e.g., ["avatar1", "url1"]
+
+                // Delete the avatar from the database
+                const avatarToDeleteRef = ref(db, `rooms/${roomID}/availableAvatars/${key}`);
+                await remove(avatarToDeleteRef);
+
+                // Return the URL of the avatar
+                return url;
+
+            } else {
+                throw new Error("No available avatars");
+            }
+        } else {
+            throw new Error("No avatars found for this room");
+        }
+    } catch (error) {
+        console.error("Error fetching avatar:", error.message);
+        return null; // Return null or handle error appropriately
+    }
+};
+
+
+
 
 export const createRoom = createAsyncThunk(
     "room/createRoom",
@@ -35,13 +68,17 @@ export const createRoom = createAsyncThunk(
                 roomID: roomID,
                 numberOfPlayers: roomData.numberOfPlayers,
                 hostName: roomData.roomCreaterName,
-                stauts: "waiting",
+                roomStatus: "waiting",
                 hostID: hostID,
                 createdAt: serverTimestamp(),
                 players: [],
+                availableAvatars: avatars
             }
             await set(ref(db, 'rooms/' + roomID), roomPayload)
-
+            localStorage.setItem('currentPlayerID', hostID)
+            const url = await getAvatar(roomID); // Wait for the promise to resolve
+            const [avatar] = Object.values(url)
+            console.log(avatar)
             const playersRef = ref(db, `rooms/${roomID}/players`);
             const hostData = {
                 playername: roomData.roomCreaterName,
@@ -49,6 +86,7 @@ export const createRoom = createAsyncThunk(
                 isHost: true,
                 score: 0,
                 rank: 0,
+                avatar: avatar
             }
             await push(playersRef, hostData);
             return { roomID, ...roomPayload, hostData };
@@ -64,8 +102,9 @@ export const joinRoom = createAsyncThunk(
     "room/joinRoom",
     async (roomData, { dispatch, rejectWithValue }) => {
         try {
-            const roomInfo = dispatch(fetchRoom(roomData.roomID))
             const playerID = generateID();
+            const url = await getAvatar(roomData.roomID); // Wait for the promise to resolve
+            const [avatar] = Object.values(url)
             const playersRef = ref(db, `rooms/${roomData.roomID}/players`);
             const playerData = {
                 playername: roomData.playerName,
@@ -73,13 +112,30 @@ export const joinRoom = createAsyncThunk(
                 isHost: false,
                 score: 0,
                 rank: 0,
+                avatar: avatar
             }
             await push(playersRef, playerData);
-            console.log(roomInfo)
-            return { playerData, roomInfo };
+            localStorage.setItem('currentPlayerID', playerID)
+            const roomPayload = dispatch(fetchRoom(roomData.roomID))
+            // console.log(roomPayload)
+            return { playerData, roomPayload };
         }
         catch (err) {
             return rejectWithValue(err.message);
+        }
+    }
+)
+export const startGame = createAsyncThunk(
+    "room/startRoom",
+    async (roomID, rejectWithValue) => {
+        const updates = {
+            [`rooms/${roomID}/roomStatus`]: "in-progress"
+        };
+
+        if (true) {
+            update(ref(db), updates)
+                .then(() => { return ("Username updated successfully") })
+                .catch((error) => { return rejectWithValue("Failed to update username:", error) });
         }
     }
 )

@@ -22,10 +22,10 @@ const Createroom = () => {
 
     useEffect(() => {
         if (!room) return
-        console.log(room)
         sessionStorage.setItem('roomCode', room.roomID)
         navigate('/Waitinglobby')
     }, [room])
+
 
     const isRoomDataValid = roomName !== "" && numberOfPlayers > 1 && roomCreaterName !== ""
     return (

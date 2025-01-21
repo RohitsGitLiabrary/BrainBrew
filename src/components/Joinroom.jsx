@@ -21,7 +21,6 @@ const Joinroom = () => {
     useEffect(() => {
         if (!room) return
         sessionStorage.setItem('roomCode', room.roomID)
-        console.log(room)
         navigate('/Waitinglobby')
 
     }, [room])
