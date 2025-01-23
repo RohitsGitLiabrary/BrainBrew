@@ -3,6 +3,7 @@ import { set, ref, serverTimestamp, push, get, remove, update } from 'firebase/d
 import { db } from '../Firebase/Firebase';
 import { fetchRoom } from "./fetchRoomThunk";
 import avatars from "../assets/Avatars/avatars";
+import axios from "axios";
 function generateRoomID(length = 6) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let roomID = '';
@@ -21,25 +22,22 @@ function generateID(length = 6) {
     return `${id}`;
 }
 
+
+
 const getAvatar = async (roomID) => {
     try {
         const roomRef = ref(db, `rooms/${roomID}/availableAvatars`);
         const snapshot = await get(roomRef);
 
         if (snapshot.exists()) {
-            const avatars = snapshot.val(); // e.g., { avatar1: "url1", avatar2: "url2", ... }
-            // Check if there are available avatars
+            const avatars = snapshot.val();
             if (Object.keys(avatars).length > 0) {
-                // Get the first available avatar (key-value pair)
-                const [key, url] = Object.entries(avatars)[0]; // e.g., ["avatar1", "url1"]
-
+                const [key, url] = Object.entries(avatars)[0];
                 // Delete the avatar from the database
                 const avatarToDeleteRef = ref(db, `rooms/${roomID}/availableAvatars/${key}`);
                 await remove(avatarToDeleteRef);
-
                 // Return the URL of the avatar
                 return url;
-
             } else {
                 throw new Error("No available avatars");
             }
@@ -52,7 +50,21 @@ const getAvatar = async (roomID) => {
     }
 };
 
+const getQuestion = async (numberOfQuestions, category, difficultyLevel) => {
+    try {
+        const response = await axios({
+            // Endpoint to send the request
+            url: `https://opentdb.com/api.php?amount=${numberOfQuestions}&category=${category}&difficulty=${difficultyLevel}`,
+            method: "GET"
+        });
 
+        // Return the data from the response
+        return response.data;
+    } catch (err) {
+        console.error("Error fetching questions:", err.message);
+        throw err; // Re-throw the error if needed
+    }
+}
 
 
 export const createRoom = createAsyncThunk(
@@ -62,6 +74,7 @@ export const createRoom = createAsyncThunk(
         try {
             const roomID = generateRoomID();
             const hostID = generateID();
+            const questions = await getQuestion(roomData.numberOfQuestions, roomData.category, roomData.difficultyLevel)
 
             const roomPayload = {
                 roomName: roomData.roomName,
@@ -72,7 +85,8 @@ export const createRoom = createAsyncThunk(
                 hostID: hostID,
                 createdAt: serverTimestamp(),
                 players: [],
-                availableAvatars: avatars
+                availableAvatars: avatars,
+                questionDB: questions
             }
             await set(ref(db, 'rooms/' + roomID), roomPayload)
             localStorage.setItem('currentPlayerID', hostID)
@@ -89,6 +103,7 @@ export const createRoom = createAsyncThunk(
                 avatar: avatar
             }
             await push(playersRef, hostData);
+
             return { roomID, ...roomPayload, hostData };
         }
         catch (err) {

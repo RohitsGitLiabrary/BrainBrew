@@ -6,6 +6,7 @@ import { fetchRoom } from "../thunks/fetchRoomThunk";
 import { ref, onValue } from "firebase/database";
 import { db } from "../Firebase/Firebase";
 import { startGame } from "../thunks/roomThunks";
+import { useNavigate } from "react-router";
 
 
 const Waitinglobby = () => {
@@ -15,6 +16,7 @@ const Waitinglobby = () => {
     const [isHost, setIsHost] = useState(false)
 
     const dispatch = useDispatch();
+    const navigate = useNavigate()
 
     // Access the room state, loading, and error
     const { loading, error } = useSelector((state) => state.room);
@@ -41,6 +43,17 @@ const Waitinglobby = () => {
             if (currentPlayerID === room.room.hostID) {
                 setIsHost(true)
             }
+        }
+    }, [room]);
+    useEffect(() => {
+        if (room.room !== null) {
+            const starCountRef = ref(db, 'rooms/' + roomCode + '/roomStatus');
+            onValue(starCountRef, (snapshot) => {
+                const gameStatus = snapshot.val();
+                if (gameStatus === "in-progress") {
+                    navigate("/Quizpage")
+                }
+            });
         }
     }, [room]);
     const handleStartGame = async () => {

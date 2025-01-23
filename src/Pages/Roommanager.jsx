@@ -15,7 +15,7 @@ const Roommanager = () => {
             <div className="absolute inset-0 bg-white/70 z-0"></div>
 
             {/* Responsive Container for Create and Join Room */}
-            <div className="relative z-10 bg-opacity-4000 bg-white/90 p-8 md:p-12 lg:p-16 rounded-lg shadow-lg w-11/12 md:w-10/12 lg:w-8/12 xl:w-6/12 text-center">
+            <div className="relative z-10 bg-opacity-400 bg-white/90 p-6 sm:p-8 md:p-12 lg:p-16 rounded-lg shadow-lg w-full sm:w-11/12 md:w-10/12 lg:w-8/12 xl:w-6/12 text-center">
                 <h1 className="text-4xl sm:text-5xl mb-4 text-[#333333]" style={{ fontFamily: '"Brush Script MT", cursive' }}
                 >BrainBrew</h1>
 

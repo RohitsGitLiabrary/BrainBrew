@@ -5,9 +5,12 @@ import { useNavigate } from "react-router";
 
 const Createroom = () => {
     const [roomName, setRoomName] = useState("");
-    const [numberOfPlayers, setnNumberOfPlayers] = useState(0)
+    const [numberOfPlayers, setnNumberOfPlayers] = useState("")
     const [roomCreaterName, setRoomCreaterName] = useState("")
     const [loading, setLoading] = useState(false)
+    const [numberOfQuestions, setNumberOfQuestions] = useState(0)
+    const [category, setCategory] = useState("")
+    const [difficultyLevel, setDifficultyLevel] = useState("")
 
     const dispatch = useDispatch()
     const navigate = useNavigate()
@@ -16,7 +19,7 @@ const Createroom = () => {
 
     const handleCreateRoom = async () => {
         setLoading(true)
-        const roomData = { roomName, numberOfPlayers, roomCreaterName }
+        const roomData = { roomName, numberOfPlayers, roomCreaterName, numberOfQuestions, category, difficultyLevel }
         dispatch(createRoom(roomData))
     }
 
@@ -29,8 +32,9 @@ const Createroom = () => {
 
     const isRoomDataValid = roomName !== "" && numberOfPlayers > 1 && roomCreaterName !== ""
     return (
-        <div className="bg-gray-100 p-6 rounded-lg shadow-md">
+        <div div className="bg-gray-100 p-6 rounded-lg shadow-md">
             <h2 className="text-xl font-bold text-black mb-4">Create Room</h2>
+
             <input
                 type="text"
                 placeholder="Room Name"
@@ -38,6 +42,7 @@ const Createroom = () => {
                 onChange={(e) => { setRoomName(e.target.value) }}
                 className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             />
+
             <input
                 type="number"
                 min="2"
@@ -47,6 +52,7 @@ const Createroom = () => {
                 onChange={(e) => { setnNumberOfPlayers(parseInt(e.target.value)) }}
                 className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             />
+
             <input
                 type="text"
                 placeholder="Player Name"
@@ -54,11 +60,67 @@ const Createroom = () => {
                 onChange={(e) => { setRoomCreaterName(e.target.value) }}
                 className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             />
-            <button className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-bold transition duration-300 flex justify-center items-center relative"
+
+            <select
+                value={numberOfQuestions}
+                onChange={(e) => setNumberOfQuestions(e.target.value)}
+                className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
+                <option value="" default disabled>Select Number of Questions</option>
+                {[5, 10, 15, 20].map((num) => (
+                    <option key={num} value={num}>{num} Questions</option>
+                ))}
+            </select>
+
+            <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
+                <option value="" disabled>Select Category</option>
+                <option value="9">General Knowledge</option>
+                <option value="21">Sports</option>
+                <option value="23">History</option>
+                <option value="22">Geography</option>
+                <option value="24">Politics</option>
+                <option value="25">Art</option>
+                <option value="26">Celebrities</option>
+                <option value="27">Animals</option>
+                <option value="28">Vehicles</option>
+                <option value="20">Mythology</option>
+                <option value="30">Science: Gadgets</option>
+                <option value="17">Science & Nature</option>
+                <option value="19">Science: Mathematics</option>
+                <option value="18">Science: Computers</option>
+                <option value="10">Entertainment: Books</option>
+                <option value="11">Entertainment: Film</option>
+                <option value="12">Entertainment: Music</option>
+                <option value="13">Entertainment: Musicals & Theatres</option>
+                <option value="14">Entertainment: Television</option>
+                <option value="15">Entertainment: Video Games</option>
+                <option value="16">Entertainment: Board Games</option>
+                <option value="29">Entertainment: Comics</option>
+                <option value="31">Entertainment: Japanese Anime & Manga</option>
+                <option value="32">Entertainment: Cartoon & Animations</option>
+            </select>
+
+            <select
+                value={difficultyLevel}
+                onChange={(e) => setDifficultyLevel(e.target.value)}
+                className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
+            >
+                <option value="" disabled>Select Difficulty Level</option>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+
+            <button
+                className="w-full bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-bold transition duration-300 flex justify-center items-center relative"
                 onClick={() => handleCreateRoom()}
                 disabled={!isRoomDataValid}
                 style={{
-                    cursor: !isRoomDataValid ? 'not-allowed' : 'pointer', // Change cursor dynamically
+                    cursor: !isRoomDataValid ? 'not-allowed' : 'pointer',
                 }}
             >
                 {loading ? (
@@ -67,7 +129,8 @@ const Createroom = () => {
                     'Create Room'
                 )}
             </button>
-        </div>
+        </div >
+
     );
 };
 

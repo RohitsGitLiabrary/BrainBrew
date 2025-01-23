@@ -1,19 +1,33 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Playerscorecard from "./Playerscorecard";
+import { fetchRoom } from "../thunks/fetchRoomThunk";
+import { useDispatch, useSelector } from "react-redux";
+import { onValue, ref } from "firebase/database";
+import { db } from "../Firebase/Firebase";
 
 const Leaderboard = () => {
-    const players = [
-        { id: 1, name: "Alice", score: 120, avatar: "https://i.pravatar.cc/50?img=1" },
-        { id: 2, name: "Bob", score: 100, avatar: "https://i.pravatar.cc/50?img=2" },
-        { id: 3, name: "Charlie", score: 80, avatar: "https://i.pravatar.cc/50?img=3" },
-        { id: 4, name: "David", score: 60, avatar: "https://i.pravatar.cc/50?img=4" },
-        { id: 5, name: "Emma", score: 50, avatar: "https://i.pravatar.cc/50?img=5" },
-        { id: 6, name: "Frank", score: 40, avatar: "https://i.pravatar.cc/50?img=6" },
-        { id: 7, name: "Grace", score: 30, avatar: "https://i.pravatar.cc/50?img=7" },
-        { id: 8, name: "Hannah", score: 20, avatar: "https://i.pravatar.cc/50?img=8" },
-        { id: 9, name: "Ian", score: 10, avatar: "https://i.pravatar.cc/50?img=9" },
-        { id: 10, name: "Jack", score: 5, avatar: "https://i.pravatar.cc/50?img=10" },
-    ];
+    const [playerList, setPlayerList] = useState([])
+
+    const dispatch = useDispatch()
+
+    const roomCode = sessionStorage.getItem('roomCode')
+    const room = useSelector((state) => state.room);
+    useEffect(() => {
+        if (roomCode) {
+            dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
+        }
+    }, [dispatch, roomCode]);
+
+
+    useEffect(() => {
+        if (room.room !== null) {
+            const starCountRef = ref(db, 'rooms/' + roomCode + '/players');
+            onValue(starCountRef, (snapshot) => {
+                const data = snapshot.val();
+                setPlayerList(Object.values(data))
+            });
+        }
+    }, [room]);
 
 
 
@@ -27,11 +41,11 @@ const Leaderboard = () => {
             {/* Scrollable Player Cards */}
             <div className="flex-1 overflow-y-auto">
                 <div className="flex flex-col gap-2">
-                    {players.map((player, index) => (
+                    {playerList.map((player, index) => (
                         <Playerscorecard
                             key={player.id}
                             avatar={player.avatar}
-                            name={player.name}
+                            name={player.playername}
                             score={player.score}
                             rank={(index + 1)} // Pass rank with medals or numbers
                         />
