@@ -23,7 +23,6 @@ function generateID(length = 6) {
 }
 
 
-
 const getAvatar = async (roomID) => {
     try {
         const roomRef = ref(db, `rooms/${roomID}/availableAvatars`);
@@ -45,7 +44,6 @@ const getAvatar = async (roomID) => {
             throw new Error("No avatars found for this room");
         }
     } catch (error) {
-        console.error("Error fetching avatar:", error.message);
         return null; // Return null or handle error appropriately
     }
 };
@@ -57,7 +55,6 @@ const getQuestion = async (numberOfQuestions, category, difficultyLevel) => {
             url: `https://opentdb.com/api.php?amount=${numberOfQuestions}&category=${category}&difficulty=${difficultyLevel}`,
             method: "GET"
         });
-
         // Return the data from the response
         return response.data;
     } catch (err) {
@@ -74,7 +71,7 @@ export const createRoom = createAsyncThunk(
         try {
             const roomID = generateRoomID();
             const hostID = generateID();
-            const questions = await getQuestion(roomData.numberOfQuestions, roomData.category, roomData.difficultyLevel)
+            // const questions = await getQuestion(roomData.numberOfQuestions, roomData.category, roomData.difficultyLevel)
 
             const roomPayload = {
                 roomName: roomData.roomName,
@@ -86,7 +83,7 @@ export const createRoom = createAsyncThunk(
                 createdAt: serverTimestamp(),
                 players: [],
                 availableAvatars: avatars,
-                questionDB: questions
+                // questionDB: questions
             }
             await set(ref(db, 'rooms/' + roomID), roomPayload)
             localStorage.setItem('currentPlayerID', hostID)
@@ -132,7 +129,6 @@ export const joinRoom = createAsyncThunk(
             await push(playersRef, playerData);
             localStorage.setItem('currentPlayerID', playerID)
             const roomPayload = dispatch(fetchRoom(roomData.roomID))
-            // console.log(roomPayload)
             return { playerData, roomPayload };
         }
         catch (err) {

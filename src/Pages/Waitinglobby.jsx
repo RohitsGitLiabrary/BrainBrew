@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import Playercard from "../components/Playercard"; // Import the PlayerCard component
 import backgroundImage from "../assets/Images/quizBG.avif";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,11 +10,10 @@ import { useNavigate } from "react-router";
 
 
 const Waitinglobby = () => {
-
+    const [timeLeft, setTimeLeft] = useState(5); // Timer (hardcoded to 15 seconds)
     const [playerList, setPlayerList] = useState([])
-    const [loader, setLoader] = useState(false)
     const [isHost, setIsHost] = useState(false)
-
+    const [roomStatus, setRoomStatus] = useState("waiting")
     const dispatch = useDispatch();
     const navigate = useNavigate()
 
@@ -31,12 +30,19 @@ const Waitinglobby = () => {
             dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
         }
     }, [dispatch, roomCode]);
+
+
     useEffect(() => {
         if (room.room !== null) {
-            // setPlayerList(Object.values(room.room.players))
-
-            const starCountRef = ref(db, 'rooms/' + roomCode + '/players');
+            const starCountRef = ref(db, 'rooms/' + roomCode + '/roomStatus');
             onValue(starCountRef, (snapshot) => {
+                const gameStatus = snapshot.val();
+                if (gameStatus === "in-progress") {
+                    setRoomStatus("in-progress")
+                }
+            });
+            const playerRef = ref(db, 'rooms/' + roomCode + '/players');
+            onValue(playerRef, (snapshot) => {
                 const data = snapshot.val();
                 setPlayerList(Object.values(data))
             });
@@ -44,21 +50,24 @@ const Waitinglobby = () => {
                 setIsHost(true)
             }
         }
-    }, [room]);
+    }, [room, timeLeft, roomStatus]);
+
+
     useEffect(() => {
-        if (room.room !== null) {
-            const starCountRef = ref(db, 'rooms/' + roomCode + '/roomStatus');
-            onValue(starCountRef, (snapshot) => {
-                const gameStatus = snapshot.val();
-                if (gameStatus === "in-progress") {
-                    navigate("/Quizpage")
-                }
-            });
+        if (roomStatus === "waiting") return
+        if (timeLeft > 0) {
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timer);
         }
-    }, [room]);
+        else {
+            navigate("/Quizpage")
+        }
+    }, [timeLeft, roomStatus]);
+
+
     const handleStartGame = async () => {
-        setLoader(true)
         if (currentPlayerID === room.room.hostID) {
+            setRoomStatus("in-progress")
             dispatch(startGame(room.room.roomID))
         }
     }
@@ -138,17 +147,33 @@ const Waitinglobby = () => {
                 </div>
                 {/* Sticky Bottom Section */}
                 <div className="sticky bottom-0 z-20 bg-white/90 p-4 rounded-b-lg">
-                    {isHost &&
-                        <button button className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-lg font-bold text-lg transition duration-300 flex justify-center items-center relative"
+
+                    {isHost ? (
+                        // If the user is the host
+                        <button className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-8 rounded-lg font-bold text-lg transition duration-300 flex justify-center items-center relative"
                             onClick={() => { handleStartGame() }}
                         >
-                            {loader ? (
-                                <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                            {roomStatus === "waiting" ? (
+                                "Start game"
+                            ) : roomStatus === "in-progress" ? (
+                                `Your game starts in ${timeLeft}`
                             ) : (
-                                'Start Game'
+                                "Unknown game status"
                             )}
                         </button>
-                    }
+                    ) : (
+                        // If the user is not the host
+                        <p className="text-center text-lg font-medium">
+                            {roomStatus === "waiting" ? (
+                                "Your game starts soon"
+                            ) : roomStatus === "in-progress" ? (
+                                `Your game starts in ${timeLeft}...`
+                            ) : (
+                                "Unknown game status"
+                            )}
+                        </p>
+                    )}
+
                     {isHost ? "" : (<p className="text-sm text-gray-500 mt-2 text-center">
                         Only the host can start the game.
                     </p>

@@ -13,17 +13,25 @@ const Joinroom = () => {
     const navigate = useNavigate()
     const isRoomDataValid = playerName !== "" && roomID !== ""
     const room = useSelector((state) => state.room.room);
+    const roomError = useSelector((state) => state.room.error)
+
     const handleJoinRoon = () => {
         setLoading(true)
         const roomData = { playerName, roomID }
         dispatch(joinRoom(roomData))
     }
     useEffect(() => {
+        if (roomError) {
+            setLoading(false); // Stop loading if there's an error
+        }
+    }, [roomError]);
+
+    useEffect(() => {
         if (!room) return
         sessionStorage.setItem('roomCode', room.roomID)
         navigate('/Waitinglobby')
-
     }, [room])
+
     return (
         <div className="bg-gray-100 p-6 rounded-lg shadow-md" >
             <h2 className="text-xl font-bold text-black mb-4">Join Room</h2>
@@ -41,7 +49,10 @@ const Joinroom = () => {
                 onChange={(e) => { setRoomID(e.target.value) }}
                 className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
-            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-bold rounded-lg font-bold transition duration-300 flex justify-center items-center relative"
+            {roomError && <p className="text-sm text-red-700 mt-1 mb-1 text-center">
+                No room found.
+            </p>}
+            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg font-bold transition duration-300 flex justify-center items-center relative"
                 onClick={() => handleJoinRoon()}
                 disabled={!isRoomDataValid}
                 style={{
@@ -53,7 +64,6 @@ const Joinroom = () => {
                 ) : (
                     'Join Room'
                 )}
-
             </button>
         </div >
 
