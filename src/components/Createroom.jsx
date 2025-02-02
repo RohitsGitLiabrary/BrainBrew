@@ -8,7 +8,7 @@ const Createroom = () => {
     const [numberOfPlayers, setnNumberOfPlayers] = useState("")
     const [roomCreaterName, setRoomCreaterName] = useState("")
     const [loading, setLoading] = useState(false)
-    const [numberOfQuestions, setNumberOfQuestions] = useState(0)
+    const [numberOfQuestions, setNumberOfQuestions] = useState("")
     const [category, setCategory] = useState("")
     const [difficultyLevel, setDifficultyLevel] = useState("")
 
@@ -66,10 +66,11 @@ const Createroom = () => {
                 onChange={(e) => setNumberOfQuestions(e.target.value)}
                 className="w-full p-2 mb-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400"
             >
-                <option value="" default disabled>Select Number of Questions</option>
-                {[5, 10, 15, 20].map((num) => (
-                    <option key={num} value={num}>{num} Questions</option>
-                ))}
+                <option value="" disabled>Select Number of Questions</option>
+                <option value="5">5 Question</option>
+                <option value="10">10 Question</option>
+                <option value="15">15 Question</option>
+                <option value="20">20 Question</option>
             </select>
 
             <select

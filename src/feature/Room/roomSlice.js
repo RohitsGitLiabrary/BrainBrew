@@ -14,7 +14,6 @@ export const roomSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-
             .addCase(fetchRoom.pending, (state) => {
                 state.loading = true;
                 state.error = null; // Reset error before starting fetch

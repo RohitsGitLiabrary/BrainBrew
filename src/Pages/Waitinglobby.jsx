@@ -1,12 +1,13 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Playercard from "../components/Playercard"; // Import the PlayerCard component
 import backgroundImage from "../assets/Images/quizBG.avif";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, update } from "firebase/database";
 import { db } from "../Firebase/Firebase";
 import { startGame } from "../thunks/roomThunks";
 import { useNavigate } from "react-router";
+
 
 
 const Waitinglobby = () => {
@@ -14,6 +15,8 @@ const Waitinglobby = () => {
     const [playerList, setPlayerList] = useState([])
     const [isHost, setIsHost] = useState(false)
     const [roomStatus, setRoomStatus] = useState("waiting")
+    const [firstQuestion, setFirstQuestion] = useState([])
+
     const dispatch = useDispatch();
     const navigate = useNavigate()
 
@@ -49,6 +52,7 @@ const Waitinglobby = () => {
             if (currentPlayerID === room.room.hostID) {
                 setIsHost(true)
             }
+            setFirstQuestion(room.room.questionDB.results[0])
         }
     }, [room, timeLeft, roomStatus]);
 
@@ -68,7 +72,9 @@ const Waitinglobby = () => {
     const handleStartGame = async () => {
         if (currentPlayerID === room.room.hostID) {
             setRoomStatus("in-progress")
-            dispatch(startGame(room.room.roomID))
+            const firstQuestionRef = ref(db, 'rooms/' + roomCode);
+            await update(firstQuestionRef, { currentQuestion: firstQuestion });
+            dispatch(startGame(room.room.roomID, firstQuestion))
         }
     }
 

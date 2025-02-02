@@ -1,28 +1,72 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
+import { onValue, ref, update } from "firebase/database";
+import { db } from "../Firebase/Firebase";
 
 const Quizquestion = () => {
     const [timeLeft, setTimeLeft] = useState(15); // Timer (hardcoded to 15 seconds)
     const [questions, setQuestions] = useState([])
-    const [currentQuestion, setCurrentQuestion] = useState([])
-
-    // const room = useSelector((state) => state.room.room);
+    const [currentQuestion, setCurrentQuestion] = useState(null)
+    const [currentIndex, setCurrentIndex] = useState(null)
+    const [shuffledAnswers, setShuffledAnswers] = useState([]);
     const { loading, error } = useSelector((state) => state.room);
-    const room = useSelector((state) => state.room);
+    const room = useSelector((state) => state.room.room);
     const roomCode = sessionStorage.getItem("roomCode")
     const dispatch = useDispatch()
+    // const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
     useEffect(() => {
         if (timeLeft > 0) {
             const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
             return () => clearTimeout(timer);
+        } else {
+            updateQuestion()
         }
     }, [timeLeft]);
+
+    // useEffect(() => {
+    //     if (roomCode) {
+    //         dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
+    //     }
+    // }, [dispatch, roomCode]);
+
     useEffect(() => {
-        if (roomCode) {
-            dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
+        if (!room) return
+        setQuestions(room.questionDB.results)
+        const currentQuestionRef = ref(db, 'rooms/' + roomCode + '/currentQuestion');
+        onValue(currentQuestionRef, (snapshot) => {
+            const data = snapshot.val();
+            setCurrentQuestion(data)
+        });
+    }, [roomCode, room])
+
+    const updateQuestion = async () => {
+        if (questions.length === 0) return;
+
+        const nextIndex = (currentQuestion.currentIndex + 1) % questions.length; // Loop back if end reached
+        setCurrentIndex(nextIndex);
+        setTimeLeft(15); // Reset timer
+        const currentQuestionRef = ref(db, 'rooms/' + roomCode)
+        await update(currentQuestionRef, { currentQuestion: questions[nextIndex] });
+        setCurrentQuestion(questions[nextIndex]);
+    }
+    useEffect(() => {
+        if (currentQuestion) {
+            const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
+            setShuffledAnswers(shuffleArray(allAnswers))
         }
-    }, [dispatch, roomCode]);
+    }, [currentQuestion])
+
+
+    function shuffleArray(allOptions) {
+        for (let i = allOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allOptions[i], allOptions[j]] = [allOptions[j], allOptions[i]]; // Swap elements
+        }
+        return allOptions;
+    }
+
+    // console.log(allAnswers)
 
 
     // Handle loading state
@@ -46,57 +90,49 @@ const Quizquestion = () => {
     }
 
     // Handle case when room data is not available yet
-    if (!room || !room.room) {
+    if (!room) {
         return (
             <div className="h-screen flex items-center justify-center">
                 <p className="text-lg font-bold text-gray-500">Room data is not available.</p>
             </div>
         );
     }
-
     return (
-        <div className="relative bg-white/90 rounded-lg shadow-2xl h-[90%] w-11/12 lg:w-3/4 flex flex-col justify-between p-6">
-            {/* BrainBrew Heading */}
+        currentQuestion && (
+            <div className="relative bg-white/90 rounded-lg shadow-2xl h-[90%] w-11/12 lg:w-3/4 flex flex-col justify-between p-6">
+                {/* BrainBrew Heading */}
 
-
-            {/* Timer and Question */}
-            <div className="flex justify-between items-center mb-4">
-                <h2
-                    className="text-3xl font-bold text-[#333333]"
-                >
-                    Question
-                </h2>
-                <div className="bg-red-500 text-white font-bold text-lg px-4 py-2 rounded-full">
-                    {timeLeft} sec
+                {/* Timer and Question */}
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-3xl font-bold text-[#333333]">Question {currentIndex}</h2>
+                    <div className="bg-red-500 text-white font-bold text-lg px-4 py-2 rounded-full">
+                        {timeLeft} sec
+                    </div>
                 </div>
-            </div>
 
-            {/* Question */}
-            <div className="mb-6">
-                <p
-                    className="text-2xl font-medium text-[#333333]"
-                >
-                    { }
-                </p>
-            </div>
+                {/* Question */}
+                <div className="mb-6">
+                    <p className="text-2xl font-medium text-[#333333]">
+                        {currentQuestion.question}
+                    </p>
+                </div>
 
-            {/* Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600">
-                    A. Paris
-                </button>
-                <button className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600">
-                    B. Berlin
-                </button>
-                <button className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600">
-                    C. Madrid
-                </button>
-                <button className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600">
-                    D. Rome
-                </button>
+                {/* Options */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {shuffledAnswers.map((answer, index) => (
+                        <button
+                            key={index}
+                            className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600"
+                        >
+                            {String.fromCharCode(65 + index)}. {answer}
+                        </button>
+                    ))}
+                </div>
+
             </div>
-        </div>
+        )
     );
+
 };
 
 export default Quizquestion;

@@ -71,7 +71,7 @@ export const createRoom = createAsyncThunk(
         try {
             const roomID = generateRoomID();
             const hostID = generateID();
-            // const questions = await getQuestion(roomData.numberOfQuestions, roomData.category, roomData.difficultyLevel)
+            const questions = await getQuestion(roomData.numberOfQuestions, roomData.category, roomData.difficultyLevel)
 
             const roomPayload = {
                 roomName: roomData.roomName,
@@ -82,8 +82,9 @@ export const createRoom = createAsyncThunk(
                 hostID: hostID,
                 createdAt: serverTimestamp(),
                 players: [],
+                currentQuestion: "NA",
                 availableAvatars: avatars,
-                // questionDB: questions
+                questionDB: questions,
             }
             await set(ref(db, 'rooms/' + roomID), roomPayload)
             localStorage.setItem('currentPlayerID', hostID)
@@ -139,14 +140,16 @@ export const joinRoom = createAsyncThunk(
 export const startGame = createAsyncThunk(
     "room/startRoom",
     async (roomID, rejectWithValue) => {
+        debugger
         const updates = {
-            [`rooms/${roomID}/roomStatus`]: "in-progress"
+            [`rooms/${roomID}/roomStatus`]: "in-progress",
+            [`rooms/${roomID}/currentQuestion/index`]: 1
         };
 
         if (true) {
             update(ref(db), updates)
-                .then(() => { return ("Username updated successfully") })
-                .catch((error) => { return rejectWithValue("Failed to update username:", error) });
+                .then(() => { return ("Room Started") })
+                .catch((error) => { return rejectWithValue("Failed to start room", error) });
         }
     }
 )
