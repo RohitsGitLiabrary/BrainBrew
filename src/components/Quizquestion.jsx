@@ -1,34 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchRoom } from "../thunks/fetchRoomThunk";
-import { onValue, ref, update } from "firebase/database";
+import { useSelector } from "react-redux";
+import he from "he";
+import { onValue, ref, runTransaction, update } from "firebase/database";
 import { db } from "../Firebase/Firebase";
+import { useNavigate } from "react-router";
 
 const Quizquestion = () => {
     const [timeLeft, setTimeLeft] = useState(15); // Timer (hardcoded to 15 seconds)
     const [questions, setQuestions] = useState([])
     const [currentQuestion, setCurrentQuestion] = useState(null)
-    const [currentIndex, setCurrentIndex] = useState(null)
+    const [currentIndex, setCurrentIndex] = useState(0)
     const [shuffledAnswers, setShuffledAnswers] = useState([]);
+    const [selectedOption, setSelectedOption] = useState()
     const { loading, error } = useSelector((state) => state.room);
     const room = useSelector((state) => state.room.room);
     const roomCode = sessionStorage.getItem("roomCode")
-    const dispatch = useDispatch()
-    // const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
+    const navigate = useNavigate()
     useEffect(() => {
         if (timeLeft > 0) {
             const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
             return () => clearTimeout(timer);
         } else {
             updateQuestion()
+            updateScoreIfCorrect()
         }
     }, [timeLeft]);
 
-    // useEffect(() => {
-    //     if (roomCode) {
-    //         dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
-    //     }
-    // }, [dispatch, roomCode]);
 
     useEffect(() => {
         if (!room) return
@@ -37,19 +34,56 @@ const Quizquestion = () => {
         onValue(currentQuestionRef, (snapshot) => {
             const data = snapshot.val();
             setCurrentQuestion(data)
+            setCurrentIndex(data.index)
+            console.log(currentQuestion, currentIndex)
+
         });
     }, [roomCode, room])
 
     const updateQuestion = async () => {
         if (questions.length === 0) return;
 
-        const nextIndex = (currentQuestion.currentIndex + 1) % questions.length; // Loop back if end reached
-        setCurrentIndex(nextIndex);
-        setTimeLeft(15); // Reset timer
-        const currentQuestionRef = ref(db, 'rooms/' + roomCode)
-        await update(currentQuestionRef, { currentQuestion: questions[nextIndex] });
-        setCurrentQuestion(questions[nextIndex]);
+        const nextIndex = currentIndex + 1 // Loop back if end reached
+        if (nextIndex === questions.length) {
+            navigate('/Winnerpage')
+        }
+
+        const updateQue = {
+            [`rooms/${roomCode}/currentQuestion`]: questions[nextIndex],
+        };
+
+        try {
+            await update(ref(db), updateQue);
+            console.log("Room Updated: Next Question Set");
+        } catch (error) {
+            console.error("Failed to update question:", error);
+        }
+        const updateIndex = {
+            [`rooms/${roomCode}/currentQuestion/index`]: nextIndex
+        };
+
+        try {
+            await update(ref(db), updateIndex);
+            console.log("Room Updated: Next Question Set");
+        } catch (error) {
+            console.error("Failed to update question:", error);
+        }
+
+        // Reset timer
+        setTimeLeft(15)
     }
+
+    const updateScoreIfCorrect = async () => {
+        const playerID = localStorage.getItem("currentPlayerID")
+        if (selectedOption !== currentQuestion.correct_answer) return; // ✅ No update if the answer is wrong
+
+        const scoreRef = ref(db, `rooms/${roomCode}/players/${playerID}/score`);
+
+        // Transaction ensures the score updates correctly even if multiple users are updating
+        await runTransaction(scoreRef, (currentScore) => (currentScore || 0) + 10);
+
+        console.log(`✅ Score updated for Player: ${playerID}`);
+    };
     useEffect(() => {
         if (currentQuestion) {
             const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
@@ -104,7 +138,7 @@ const Quizquestion = () => {
 
                 {/* Timer and Question */}
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-3xl font-bold text-[#333333]">Question {currentIndex}</h2>
+                    <h2 className="text-3xl font-bold text-[#333333]">Question {currentQuestion.index}</h2>
                     <div className="bg-red-500 text-white font-bold text-lg px-4 py-2 rounded-full">
                         {timeLeft} sec
                     </div>
@@ -113,7 +147,7 @@ const Quizquestion = () => {
                 {/* Question */}
                 <div className="mb-6">
                     <p className="text-2xl font-medium text-[#333333]">
-                        {currentQuestion.question}
+                        {he.decode(currentQuestion.question)}
                     </p>
                 </div>
 
@@ -122,17 +156,18 @@ const Quizquestion = () => {
                     {shuffledAnswers.map((answer, index) => (
                         <button
                             key={index}
-                            className="bg-blue-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-600"
+                            value={answer}
+                            className={`font-semibold py-3 px-4 rounded-lg transition-colors duration-200 ${selectedOption === answer ? "bg-yellow-400 text-black" : "bg-blue-500 text-white hover:bg-blue-600"
+                                }`}
+                            onClick={(e) => setSelectedOption(e.target.value)}
                         >
-                            {String.fromCharCode(65 + index)}. {answer}
+                            {String.fromCharCode(65 + index)}. {he.decode(answer)}
                         </button>
                     ))}
                 </div>
-
             </div>
         )
     );
-
 };
 
 export default Quizquestion;

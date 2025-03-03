@@ -1,5 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { set, ref, serverTimestamp, push, get, remove, update } from 'firebase/database';
+import { set, ref, serverTimestamp, get, remove, update } from 'firebase/database';
 import { db } from '../Firebase/Firebase';
 import { fetchRoom } from "./fetchRoomThunk";
 import avatars from "../assets/Avatars/avatars";
@@ -91,7 +91,8 @@ export const createRoom = createAsyncThunk(
             const url = await getAvatar(roomID); // Wait for the promise to resolve
             const [avatar] = Object.values(url)
             console.log(avatar)
-            const playersRef = ref(db, `rooms/${roomID}/players`);
+            const playersRef = ref(db, `rooms/${roomID}/players/${hostID}`);
+
             const hostData = {
                 playername: roomData.roomCreaterName,
                 playerID: hostID,
@@ -100,8 +101,7 @@ export const createRoom = createAsyncThunk(
                 rank: 0,
                 avatar: avatar
             }
-            await push(playersRef, hostData);
-
+            await set(playersRef, hostData);
             return { roomID, ...roomPayload, hostData };
         }
         catch (err) {
@@ -118,7 +118,7 @@ export const joinRoom = createAsyncThunk(
             const playerID = generateID();
             const url = await getAvatar(roomData.roomID); // Wait for the promise to resolve
             const [avatar] = Object.values(url)
-            const playersRef = ref(db, `rooms/${roomData.roomID}/players`);
+            const playersRef = ref(db, `rooms/${roomData.roomID}/players/${playerID}`);
             const playerData = {
                 playername: roomData.playerName,
                 playerID: playerID,
@@ -127,7 +127,7 @@ export const joinRoom = createAsyncThunk(
                 rank: 0,
                 avatar: avatar
             }
-            await push(playersRef, playerData);
+            await set(playersRef, playerData);
             localStorage.setItem('currentPlayerID', playerID)
             const roomPayload = dispatch(fetchRoom(roomData.roomID))
             return { playerData, roomPayload };
@@ -140,10 +140,9 @@ export const joinRoom = createAsyncThunk(
 export const startGame = createAsyncThunk(
     "room/startRoom",
     async (roomID, rejectWithValue) => {
-        debugger
         const updates = {
             [`rooms/${roomID}/roomStatus`]: "in-progress",
-            [`rooms/${roomID}/currentQuestion/index`]: 1
+            [`rooms/${roomID}/currentQuestion/index`]: 0
         };
 
         if (true) {

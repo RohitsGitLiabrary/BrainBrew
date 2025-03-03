@@ -1,7 +1,7 @@
 import React from 'react'
 import backgroundImage from "../assets/Images/quizBG.avif";
 import { useNavigate } from 'react-router';
-
+import he from "he"
 
 const Homepage = () => {
     const navigate = useNavigate()
