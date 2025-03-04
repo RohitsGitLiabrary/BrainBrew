@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import he from "he";
 import { onValue, ref, runTransaction, update } from "firebase/database";
 import { db } from "../Firebase/Firebase";
-import { useNavigate } from "react-router";
+import { data, useNavigate } from "react-router";
+import { fetchRoom } from "../thunks/fetchRoomThunk";
 
 const Quizquestion = () => {
-    const [timeLeft, setTimeLeft] = useState(15); // Timer (hardcoded to 15 seconds)
     const [questions, setQuestions] = useState([])
     const [currentQuestion, setCurrentQuestion] = useState(null)
+    const [timeLeft, setTimeLeft] = useState(null); // Timer (hardcoded to 15 seconds)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [shuffledAnswers, setShuffledAnswers] = useState([]);
     const [selectedOption, setSelectedOption] = useState()
@@ -16,15 +17,33 @@ const Quizquestion = () => {
     const room = useSelector((state) => state.room.room);
     const roomCode = sessionStorage.getItem("roomCode")
     const navigate = useNavigate()
+    const dispatch = useDispatch();
+    const questionDuration = 15000; // 10 seconds per question
+
+
     useEffect(() => {
-        if (timeLeft > 0) {
-            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+        if (roomCode) {
+            dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
+        }
+    }, [dispatch, roomCode]);
+
+    useEffect(() => {
+        if (!currentQuestion) {
+            return
+        }
+        let endTime = Math.ceil((currentQuestion.endTime - Date.now()) / 1000);
+        console.log(endTime)
+        if (endTime > 0) {
+            const timer = setTimeout(() => setTimeLeft(endTime - 1), 1000);
+            console.log(timeLeft)
             return () => clearTimeout(timer);
-        } else {
+        }
+        else {
             updateQuestion()
             updateScoreIfCorrect()
         }
     }, [timeLeft]);
+
 
 
     useEffect(() => {
@@ -35,7 +54,8 @@ const Quizquestion = () => {
             const data = snapshot.val();
             setCurrentQuestion(data)
             setCurrentIndex(data.index)
-            console.log(currentQuestion, currentIndex)
+            setTimeLeft(data.endTime)
+            // console.log(currentQuestion, currentIndex)
 
         });
     }, [roomCode, room])
@@ -58,10 +78,19 @@ const Quizquestion = () => {
         } catch (error) {
             console.error("Failed to update question:", error);
         }
+
+        const timerRef = ref(db, 'rooms/' + roomCode + '/currentQuestion/');
+        try {
+            await update(timerRef, { endTime: Date.now() + questionDuration })
+            console.log("Timer updated for next question");
+        }
+        catch (error) {
+            console.error("Failed to update timer for current question:", error);
+        }
+
         const updateIndex = {
             [`rooms/${roomCode}/currentQuestion/index`]: nextIndex
         };
-
         try {
             await update(ref(db), updateIndex);
             console.log("Room Updated: Next Question Set");
@@ -70,7 +99,7 @@ const Quizquestion = () => {
         }
 
         // Reset timer
-        setTimeLeft(15)
+        // setTimeLeft(15)
     }
 
     const updateScoreIfCorrect = async () => {
@@ -138,7 +167,7 @@ const Quizquestion = () => {
 
                 {/* Timer and Question */}
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-3xl font-bold text-[#333333]">Question {currentQuestion.index}</h2>
+                    <h2 className="text-3xl font-bold text-[#333333]">Question {currentQuestion.index + 1}</h2>
                     <div className="bg-red-500 text-white font-bold text-lg px-4 py-2 rounded-full">
                         {timeLeft} sec
                     </div>

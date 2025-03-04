@@ -3,7 +3,7 @@ import Playercard from "../components/Playercard"; // Import the PlayerCard comp
 import backgroundImage from "../assets/Images/quizBG.avif";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
-import { ref, onValue, update } from "firebase/database";
+import { ref, onValue, update, set } from "firebase/database";
 import { db } from "../Firebase/Firebase";
 import { startGame } from "../thunks/roomThunks";
 import { useNavigate } from "react-router";
@@ -16,6 +16,7 @@ const Waitinglobby = () => {
     const [isHost, setIsHost] = useState(false)
     const [roomStatus, setRoomStatus] = useState("waiting")
     const [firstQuestion, setFirstQuestion] = useState([])
+    const questionDuration = 15000; // 10 seconds per question
 
     const dispatch = useDispatch();
     const navigate = useNavigate()
@@ -73,7 +74,9 @@ const Waitinglobby = () => {
         if (currentPlayerID === room.room.hostID) {
             setRoomStatus("in-progress")
             const firstQuestionRef = ref(db, 'rooms/' + roomCode);
+            const timerRef = ref(db, 'rooms/' + roomCode + '/currentQuestion/');
             await update(firstQuestionRef, { currentQuestion: firstQuestion });
+            await update(timerRef, { endTime: Date.now() + questionDuration })
             dispatch(startGame(room.room.roomID, firstQuestion))
         }
     }
