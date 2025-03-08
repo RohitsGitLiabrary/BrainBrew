@@ -3,13 +3,14 @@ import { useDispatch, useSelector } from "react-redux";
 import he from "he";
 import { onValue, ref, runTransaction, update } from "firebase/database";
 import { db } from "../Firebase/Firebase";
-import { data, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
 
 const Quizquestion = () => {
     const [questions, setQuestions] = useState([])
     const [currentQuestion, setCurrentQuestion] = useState(null)
-    const [timeLeft, setTimeLeft] = useState(null); // Timer (hardcoded to 15 seconds)
+    const [timeLeft, setTimeLeft] = useState(15); // Timer (hardcoded to 15 seconds)
+    const [serverTime, setServerTime] = useState(null)
     const [currentIndex, setCurrentIndex] = useState(0)
     const [shuffledAnswers, setShuffledAnswers] = useState([]);
     const [selectedOption, setSelectedOption] = useState()
@@ -18,7 +19,7 @@ const Quizquestion = () => {
     const roomCode = sessionStorage.getItem("roomCode")
     const navigate = useNavigate()
     const dispatch = useDispatch();
-    const questionDuration = 15000; // 10 seconds per question
+    const questionDuration = 20000; // 10 seconds per question
 
 
     useEffect(() => {
@@ -26,24 +27,6 @@ const Quizquestion = () => {
             dispatch(fetchRoom(roomCode)); // Fetch room data using the roomID
         }
     }, [dispatch, roomCode]);
-
-    useEffect(() => {
-        if (!currentQuestion) {
-            return
-        }
-        let endTime = Math.ceil((currentQuestion.endTime - Date.now()) / 1000);
-        console.log(endTime)
-        if (endTime > 0) {
-            const timer = setTimeout(() => setTimeLeft(endTime - 1), 1000);
-            console.log(timeLeft)
-            return () => clearTimeout(timer);
-        }
-        else {
-            updateQuestion()
-            updateScoreIfCorrect()
-        }
-    }, [timeLeft]);
-
 
 
     useEffect(() => {
@@ -54,11 +37,33 @@ const Quizquestion = () => {
             const data = snapshot.val();
             setCurrentQuestion(data)
             setCurrentIndex(data.index)
-            setTimeLeft(data.endTime)
-            // console.log(currentQuestion, currentIndex)
-
+            setServerTime(data.endTime)
         });
     }, [roomCode, room])
+
+    useEffect(() => {
+        if (!currentQuestion) {
+            return
+        }
+        let endTime = Math.ceil((serverTime - Date.now()) / 1000);
+        console.log(serverTime)
+        if (endTime > 0) {
+            const timer = setTimeout(() => setTimeLeft(endTime - 1), 1000);
+            console.log(timeLeft)
+            return () => clearTimeout(timer);
+        }
+        else {
+            updateQuestion()
+            updateScoreIfCorrect()
+        }
+    }, [timeLeft, serverTime, currentQuestion]);
+
+    useEffect(() => {
+        if (currentQuestion) {
+            const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
+            setShuffledAnswers(shuffleArray(allAnswers))
+        }
+    }, [currentQuestion])
 
     const updateQuestion = async () => {
         if (questions.length === 0) return;
@@ -66,8 +71,16 @@ const Quizquestion = () => {
         const nextIndex = currentIndex + 1 // Loop back if end reached
         if (nextIndex === questions.length) {
             navigate('/Winnerpage')
+            const updateQue = {
+                [`rooms/${roomCode}/roomStatus`]: "completed",
+            };
+            try {
+                await update(ref(db), updateQue);
+                console.log("Room Updated: Next Question Set");
+            } catch (error) {
+                console.error("Failed to update question:", error);
+            }
         }
-
         const updateQue = {
             [`rooms/${roomCode}/currentQuestion`]: questions[nextIndex],
         };
@@ -111,14 +124,9 @@ const Quizquestion = () => {
         // Transaction ensures the score updates correctly even if multiple users are updating
         await runTransaction(scoreRef, (currentScore) => (currentScore || 0) + 10);
 
-        console.log(`✅ Score updated for Player: ${playerID}`);
+        console.log(`Score updated for Player: ${playerID} `);
     };
-    useEffect(() => {
-        if (currentQuestion) {
-            const allAnswers = [currentQuestion.correct_answer].concat(currentQuestion.incorrect_answers);
-            setShuffledAnswers(shuffleArray(allAnswers))
-        }
-    }, [currentQuestion])
+
 
 
     function shuffleArray(allOptions) {
