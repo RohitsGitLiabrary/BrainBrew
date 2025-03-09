@@ -15,7 +15,7 @@ BrainBrew is an interactive multiplayer quiz game built using **React.js** and *
 
 - **Frontend:** React.js, React Router,Redux, useReducer, Emoji Mart
 - **Database:** Firebase Realtime Database
-- **Hosting:** Firebase Hosting
+- **Hosting:** Vercel Hosting
 
 ## Getting Started
 
