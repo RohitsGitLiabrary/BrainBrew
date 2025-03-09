@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { FaMedal } from "react-icons/fa";
 import backgroundImage from "../assets/Images/quizBG.avif";
-import avatars from "../assets/Avatars/avatars";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchRoom } from "../thunks/fetchRoomThunk";
-import { useTime } from "framer-motion";
+import { ref, remove } from "firebase/database";
+import { db } from "../Firebase/Firebase";
+
 
 const WinnerPage = () => {
     const [winnerIDs, setWinnerIDs] = useState([]);
@@ -29,26 +30,18 @@ const WinnerPage = () => {
             setLoading(false)
         }
     }, [room])
-    console.log(winnerIDs)
-    console.log(rankers)
-    // const winners = [
-    //     {
-    //         name: "Player One",
-    //         avatar: avatars.avatar1,
-    //         score: 100,
-    //     },
-    //     {
-    //         name: "Player Two",
-    //         avatar: avatars.avatar2,
-    //         score: 90,
-    //     },
-    //     {
-    //         name: "Player Three",
-    //         avatar: avatars.avatar3,
-    //         score: 80,
-    //     },
-    // ];
 
+    const handleReturnHome = async () => {
+        window.location.href = "/";
+        const deleteRoomRef = ref(db, 'rooms/' + roomCode);
+        await remove(deleteRoomRef);
+    }
+
+    const handlecreateRoomAgain = async () => {
+        window.location.href = "/Roommanager";
+        const deleteRoomRef = ref(db, 'rooms/' + roomCode);
+        await remove(deleteRoomRef);
+    }
     if (loading) {
         return (
             <div className="h-screen flex items-center justify-center">
@@ -124,13 +117,13 @@ const WinnerPage = () => {
                     {/* Buttons */}
                     <div className="flex space-x-4 justify-center mt-8">
                         <button
-                            onClick={() => (window.location.href = "/")}
+                            onClick={() => handleReturnHome()}
                             className="px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600"
                         >
                             Return to Homepage
                         </button>
                         <button
-                            onClick={() => (window.location.href = "/Roommanager")}
+                            onClick={() => handlecreateRoomAgain()}
                             className="px-6 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600"
                         >
                             Create Room Again

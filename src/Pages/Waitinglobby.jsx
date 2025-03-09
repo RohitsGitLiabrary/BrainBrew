@@ -16,7 +16,7 @@ const Waitinglobby = () => {
     const [isHost, setIsHost] = useState(false)
     const [roomStatus, setRoomStatus] = useState("waiting")
     const [firstQuestion, setFirstQuestion] = useState([])
-    const questionDuration = 25000; // 10 seconds per question
+    const questionDuration = 25000; // 20 seconds per question
 
     const dispatch = useDispatch();
     const navigate = useNavigate()
